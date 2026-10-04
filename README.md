@@ -1,3 +1,5 @@
+<img src="packaging/icon.png" width="96" align="right" alt="">
+
 # Moustache Dare
 
 A tiny Windows app that sticks procedurally generated moustaches on top of everything on your
@@ -18,6 +20,8 @@ A small toolbar appears at the top of the screen.
 | Remove all | Bin button in the toolbar |
 | Hide the toolbar | Arrow button (click the small icon to bring it back) |
 | Quit | **✕** in the toolbar |
+
+Only one copy runs at a time; launching it again while it's open does nothing.
 
 Everything that isn't a moustache or the toolbar is click-through, so the movie player underneath
 keeps working normally. Grabbing a moustache never steals focus from the player.

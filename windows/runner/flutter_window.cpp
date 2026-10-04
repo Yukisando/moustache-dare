@@ -57,6 +57,7 @@ bool FlutterWindow::OnCreate() {
         } else if (call.method_name() == "keepOnTop") {
           ::SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+          EnsureViewVisible();
           result->Success();
         } else {
           result->NotImplemented();
@@ -66,6 +67,7 @@ bool FlutterWindow::OnCreate() {
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
+    EnsureViewVisible();
   });
 
   // Flutter can complete the first frame before the "show window" callback is
@@ -74,6 +76,14 @@ bool FlutterWindow::OnCreate() {
   flutter_controller_->ForceRedraw();
 
   return true;
+}
+
+// On some multi-monitor / high-DPI setups the Flutter child view is left
+// hidden after startup, so the overlay renders nothing. Show it explicitly.
+void FlutterWindow::EnsureViewVisible() {
+  if (!flutter_controller_ || !flutter_controller_->view()) return;
+  HWND view = flutter_controller_->view()->GetNativeWindow();
+  if (!::IsWindowVisible(view)) ::ShowWindow(view, SW_SHOWNA);
 }
 
 void FlutterWindow::OnDestroy() {

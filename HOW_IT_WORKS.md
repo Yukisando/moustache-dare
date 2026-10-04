@@ -1,7 +1,7 @@
 # How Moustache Dare works
 
-The app is a single Flutter window pretending to be many floating moustaches. There are three
-pieces: the overlay window, the procedural painter, and the portable packaging.
+The app is a single Flutter window pretending to be many floating moustaches. There are four
+pieces: the overlay window, the procedural painter, the icon, and the portable packaging.
 
 ## 1. The overlay window
 
@@ -38,7 +38,16 @@ A small `MethodChannel` named `moustache/native` exposes two Win32 calls:
 | Method | What it does |
 | --- | --- |
 | `setClickThrough(bool)` | Toggles `WS_EX_TRANSPARENT`. It always keeps `WS_EX_LAYERED` (with `SetLayeredWindowAttributes` so the window stays visible), `WS_EX_NOACTIVATE` so clicking a moustache never takes focus from the video player, and `WS_EX_APPWINDOW` so the app keeps its taskbar entry. |
-| `keepOnTop()` | `SetWindowPos(HWND_TOPMOST, …, SWP_NOACTIVATE)`. Dart calls it every 2 s, because other topmost windows can push the overlay down. `window_manager`'s own `setAlwaysOnTop` activates the window, which would steal focus. |
+| `keepOnTop()` | `SetWindowPos(HWND_TOPMOST, …, SWP_NOACTIVATE)`, then makes sure the Flutter view is visible (see below). Dart calls it every 2 s, because other topmost windows can push the overlay down. `window_manager`'s own `setAlwaysOnTop` activates the window, which would steal focus. |
+
+### Startup details (`windows/runner/`)
+
+- **Single instance.** `main.cpp` creates the named mutex `Local\MoustacheDare.SingleInstance`.
+  If it already exists, the new process exits before creating a window.
+- **Making sure the view shows.** On some multi-monitor / high-DPI setups, the Flutter child view
+  (`FLUTTERVIEW`) stayed hidden after startup: the overlay window existed and was on top but drew
+  nothing. `FlutterWindow::EnsureViewVisible()` shows it after the first frame and again on every
+  `keepOnTop` tick.
 
 ### Interaction
 
@@ -69,7 +78,14 @@ Each moustache is a random integer seed. `MoustacheGenes(seed)` derives everythi
 Because everything comes from the seed, the same moustache always renders the same way at any
 scale.
 
-## 3. Portable single-file exe (`packaging/`)
+## 3. Icon
+
+`packaging/make_icon.py` (Python + Pillow) draws a curly handlebar moustache on a warm tile. It
+uses the same bezier and spiral construction as the painter and writes
+`windows/runner/resources/app_icon.ico` (16–256 px) plus `packaging/icon.png`. The ico is used by
+both the app and the portable launcher.
+
+## 4. Portable single-file exe (`packaging/`)
 
 `flutter build windows --release` produces a folder (exe, engine DLL, plugin DLLs, `data/`),
 not a single file. `packaging/build_portable.sh` wraps that folder:
